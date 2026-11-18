@@ -24,6 +24,7 @@ import (
 	"filippo.io/age"
 	"filippo.io/age/agessh"
 	"filippo.io/age/armor"
+	"filippo.io/age/internal/armordetect"
 	"filippo.io/age/internal/term"
 	"filippo.io/age/plugin"
 )
@@ -502,9 +503,7 @@ func decrypt(identities []age.Identity, in io.Reader, out io.Writer) {
 			"consider using -o or -a to encrypt files in PowerShell")
 	}
 
-	const maxWhitespace = 1024
-	start, _ := rr.Peek(maxWhitespace + len(armor.Header))
-	if strings.HasPrefix(string(bytes.TrimSpace(start)), armor.Header) {
+	if armordetect.IsArmored(rr) {
 		in = armor.NewReader(rr)
 	} else {
 		in = rr

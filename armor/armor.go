@@ -18,11 +18,12 @@ import (
 	"io"
 
 	"filippo.io/age/internal/format"
+	"filippo.io/age/internal/armorformat"
 )
 
 const (
-	Header = "-----BEGIN AGE ENCRYPTED FILE-----"
-	Footer = "-----END AGE ENCRYPTED FILE-----"
+	Header = armorformat.Header
+	Footer = armorformat.Footer
 )
 
 type armoredWriter struct {
@@ -113,16 +114,15 @@ func (r *armoredReader) Read(p []byte) (int, error) {
 		return line, nil
 	}
 
-	const maxWhitespace = 1024
 	drainTrailing := func() error {
-		buf, err := io.ReadAll(io.LimitReader(r.r, maxWhitespace))
+		buf, err := io.ReadAll(io.LimitReader(r.r, armorformat.MaxWhitespace))
 		if err != nil {
 			return err
 		}
 		if len(bytes.TrimSpace(buf)) != 0 {
 			return errors.New("trailing data after armored file")
 		}
-		if len(buf) == maxWhitespace {
+		if len(buf) == armorformat.MaxWhitespace {
 			return errors.New("too much trailing whitespace")
 		}
 		return io.EOF
@@ -137,7 +137,7 @@ func (r *armoredReader) Read(p []byte) (int, error) {
 		// Ignore leading whitespace.
 		if len(bytes.TrimSpace(line)) == 0 {
 			removedWhitespace += len(line) + 1
-			if removedWhitespace > maxWhitespace {
+			if removedWhitespace > armorformat.MaxWhitespace {
 				return 0, r.setErr(errors.New("too much leading whitespace"))
 			}
 			continue

@@ -18,6 +18,7 @@ import (
 	"filippo.io/age"
 	"filippo.io/age/agessh"
 	"filippo.io/age/armor"
+	"filippo.io/age/internal/armordetect"
 	"filippo.io/age/internal/term"
 	"filippo.io/age/plugin"
 	"filippo.io/age/tag"
@@ -180,16 +181,15 @@ func parseIdentitiesFile(name string) ([]age.Identity, error) {
 	}
 
 	b := bufio.NewReader(f)
-	const maxWhitespace = 1024
-	p, _ := b.Peek(maxWhitespace + len(armor.Header))
+	p, _ := b.Peek(armordetect.MaxWhitespace + len(armor.Header))
 	trimmed := bytes.TrimSpace(p)
+	isArmored := armordetect.IsArmored(b)
 
 	switch {
 	// An age encrypted file, plain or armored.
-	case bytes.HasPrefix(p, []byte("age-encryption")) ||
-		bytes.HasPrefix(trimmed, []byte(armor.Header)):
+	case bytes.HasPrefix(p, []byte("age-encryption")) || isArmored:
 		var r io.Reader = b
-		if bytes.HasPrefix(trimmed, []byte(armor.Header)) {
+		if isArmored {
 			r = armor.NewReader(r)
 		}
 		const privateKeySizeLimit = 1 << 24 // 16 MiB

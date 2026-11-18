@@ -5,9 +5,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"strings"
 
 	"filippo.io/age/armor"
+	"filippo.io/age/internal/armordetect"
 	"filippo.io/age/internal/format"
 	"filippo.io/age/internal/stream"
 )
@@ -38,9 +38,7 @@ func Inspect(r io.Reader, fileSize int64) (*Metadata, error) {
 
 	tr := &trackReader{r: r}
 	br := bufio.NewReader(tr)
-	const maxWhitespace = 1024
-	start, _ := br.Peek(maxWhitespace + len(armor.Header))
-	if strings.HasPrefix(string(bytes.TrimSpace(start)), armor.Header) {
+	if armordetect.IsArmored(br) {
 		r = armor.NewReader(br)
 		data.Armor = true
 	} else {
